@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduBot - Learn Smarter</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top right, #1e2a78, #0e0e1a);
+      color: white;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 50px;
+      background-color: #11142d;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #4ef3ff;
+    }
+
+    nav a {
+      margin-left: 30px;
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+    }
+
+    .main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 80px 50px;
+    }
+
+    .left h2 {
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    .checklist {
+      margin-bottom: 30px;
+    }
+
+    .checklist div {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+
+    .checkmark {
+      color: #00ff94;
+      margin-right: 10px;
+    }
+
+    .cta-button {
+      background-color: #4ef3ff;
+      color: black;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .chatbox-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 10000;
+      background-color: #4ef3ff;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .chatbox {
+      position: fixed;
+      bottom: 80px;
+      right: 30px;
+      width: 370px;
+      height: 500px;
+      background-color: white;
+      border-radius: 10px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 9999;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .message {
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #38f0f0;
+      color: black;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #e0e0e0;
+      color: #111;
+    }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+
+    .chat-input input {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    .chat-input button {
+      border: none;
+      background: #4ef3ff;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin: 5px 0;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EduBot</h1>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">Courses</a>
+      <a href="#">Resources</a>
+      <a href="#">Contact</a>
+    </nav>
+  </header>
+  <div class="main">
+    <div class="left">
+      <h2>Empowering Students with AI-Powered Learning</h2>
+      <div class="checklist">
+        <div><span class="checkmark">✅</span> Personalized Study Assistant</div>
+        <div><span class="checkmark">✅</span> 24/7 Homework Help</div>
+        <div><span class="checkmark">✅</span> Smart Content Recommendations</div>
+      </div>
+      <button class="cta-button">Try EduBot Now</button>
+    </div>
+  </div>
+
+  <button class="chatbox-toggle" onclick="toggleChatbox()">💬</button>
+  <div class="chatbox" id="chatbox">
+    <div class="chat-messages" id="chat"></div>
+    <div class="chat-input">
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('messageInput');
+    const chatbox = document.getElementById('chatbox');
+
+    const WEBHOOK_URL = "https://shinhai08.app.n8n.cloud/webhook/1538371d-c11d-4b3a-a094-fcccbbb44835";
+
+    let sessionId = localStorage.getItem("chatbot-session");
+    if (!sessionId) {
+      sessionId = "user-" + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem("chatbot-session", sessionId);
+    }
+
+    function toggleChatbox() {
+      chatbox.style.display = chatbox.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function cleanMarkdown(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // in đậm
+        .replace(/(?:\r\n|\r|\n)/g, '<br>')                // xuống dòng
+        .replace(/- (.*?)(?=<br>|$)/g, '<li>$1</li>')      // dấu gạch đầu dòng thành <li>
+        .replace(/<br>(<li>.*?<\/li>)+/g, match => `<ul>${match.replace(/<br>/g, '')}</ul>`);
+    }
+
+    function appendMessage(text, sender) {
+      const msg = document.createElement('div');
+      msg.className = `message ${sender}`;
+      msg.innerHTML = sender === 'bot' ? cleanMarkdown(text) : text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage(text, 'user');
+      input.value = '';
+      appendMessage("...", 'bot');
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            sessionId: sessionId
+          })
+        });
+
+        const data = await response.json();
+        const botMsg = data.output || data.reply || "🤖 No response from bot.";
+
+        const last = chat.querySelector('.bot:last-child');
+        if (last && last.innerText === '...') last.remove();
+
+        appendMessage(botMsg, 'bot');
+      } catch (err) {
+        console.error(err);
+        appendMessage("Bot is not responding.", 'bot');
+      }
+    }
+
+    input.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
