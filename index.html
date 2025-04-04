@@ -145,15 +145,6 @@
       cursor: pointer;
       font-size: 16px;
     }
-
-    ul {
-      padding-left: 20px;
-      margin: 5px 0;
-    }
-
-    li {
-      margin-bottom: 4px;
-    }
   </style>
 </head>
 <body>
@@ -204,18 +195,10 @@
       chatbox.style.display = chatbox.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    function cleanMarkdown(text) {
-      return text
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // in đậm
-        .replace(/(?:\r\n|\r|\n)/g, '<br>')                // xuống dòng
-        .replace(/- (.*?)(?=<br>|$)/g, '<li>$1</li>')      // dấu gạch đầu dòng thành <li>
-        .replace(/<br>(<li>.*?<\/li>)+/g, match => `<ul>${match.replace(/<br>/g, '')}</ul>`);
-    }
-
     function appendMessage(text, sender) {
       const msg = document.createElement('div');
       msg.className = `message ${sender}`;
-      msg.innerHTML = sender === 'bot' ? cleanMarkdown(text) : text;
+      msg.innerText = text;
       chat.appendChild(msg);
       chat.scrollTop = chat.scrollHeight;
     }
